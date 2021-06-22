@@ -6,48 +6,48 @@
 Градация делается с учетом времни запроса.
 '''
 
-import time
-import asyncio
-import aiohttp
+# import time
+# import asyncio
+# import aiohttp
 
-# Список сайтов для опроса
-urls = [
-    'http://www.google.com',
-    'http://www.yandex.ru',
-    'http://www.python.org',
-    'https://vk.com/',
-    'https://www.youtube.com/',
-    'https://mail.ru/',
-    'http://tapochek.net/index.php'
-]
-start = time.time() # Время начала отсчета
+# # Список сайтов для опроса
+# urls = [
+#     'http://www.google.com',
+#     'http://www.yandex.ru',
+#     'http://www.python.org',
+#     'https://vk.com/',
+#     'https://www.youtube.com/',
+#     'https://mail.ru/',
+#     'http://tapochek.net/index.php'
+# ]
+# start = time.time() # Время начала отсчета
 
-# Функция измерения времени
-def tic():
-    return 'at %1.3f seconds' % (time.time() - start)
+# # Функция измерения времени
+# def tic():
+#     return 'at %1.3f seconds' % (time.time() - start)
 
-# Асинхронная функция для опроса сайта по url
-async def call_url(url):
-    print('Starting {}'.format(url))
-    # Асинхронный запрос 'GET' к сайту по url представить как "запрос"
-    async with aiohttp.request('GET', url) as response:
-    #response = await aiohttp.get(url) # Не работает на py3.6
-        # Получаем данные в виде текста
-        data = await response.text()
-        # Выводим результат получения данных
-        #print('>>>> {}:{}: {} bytes: {}'.format(tic(), url, len(data), 'data'))
-        print(tic(), url, 'bytes:', len(data), 'data')
-        return data
+# # Асинхронная функция для опроса сайта по url
+# async def call_url(url):
+#     print('Starting {}'.format(url))
+#     # Асинхронный запрос 'GET' к сайту по url представить как "запрос"
+#     async with aiohttp.request('GET', url) as response:
+#     #response = await aiohttp.get(url) # Не работает на py3.6
+#         # Получаем данные в виде текста
+#         data = await response.text()
+#         # Выводим результат получения данных
+#         #print('>>>> {}:{}: {} bytes: {}'.format(tic(), url, len(data), 'data'))
+#         print(tic(), url, 'bytes:', len(data), 'data')
+#         return data
 
-#Футура - объект с результатом выполнеиня задачи.
-futures = [call_url(url) for url in urls]
+# #Футура - объект с результатом выполнеиня задачи.
+# futures = [call_url(url) for url in urls]
 
-# Создание главного цикла
-loop = asyncio.get_event_loop()
-# Запуск в цикле асихронных функций
-loop.run_until_complete(asyncio.wait(futures))
-# Как только закончатся выполнения функций, закрыть цикл
-loop.close()
+# # Создание главного цикла
+# loop = asyncio.get_event_loop()
+# # Запуск в цикле асихронных функций
+# loop.run_until_complete(asyncio.wait(futures))
+# # Как только закончатся выполнения функций, закрыть цикл
+# loop.close()
 
 ##########################################################
 '''
@@ -194,54 +194,54 @@ loop.close()
 Тот же пример, только с обработчиком запросов и исключений.
 Выводятся все сервисы, каждый со своим временем и одним, который без ответа.
 '''
-#
-#from collections import namedtuple
-#import time
-#import asyncio
-#import aiohttp
-#
-#Service = namedtuple('Service', ('name', 'url', 'ip_attr'))
-#
-#SERVICES = (
-#    Service('ipify', 'https://api.ipify.org?format=json', 'ip'),
-#    Service('ip-api', 'http://ip-api.com/json', 'query'),
-#    Service('borken', 'http://no-way-this-is-going-to-work.com/json', 'ip')
-#)
-#
-#
-#async def fetch_ip(service):
-#    start = time.time()
-#    print('Fetching IP from {}'.format(service.name))
-#
-#    # Ставим обработчик исключений
-#    # Если все верно, то выполняем стандартный код
-#    try:
-#        async with aiohttp.request('GET', service.url) as response:
-#            json_response = await response.json()
-#            ip = json_response[service.ip_attr]
-#            return ' >>> {} finished with result: {}, time: {:.2f} seconds'.format(
-#                service.name, ip, time.time() - start)
-#    # Иначе возвращаем строку с ошибкой
-#    except:
-#        return ' >>> {} is unresponsive'.format(service.name)
-#
-#    # В конце закрываем запрос.
-#    response.close()
-#
-#
-#async def asynchronous():
-#    # Пробежка по Сервисам
-#    futures = [fetch_ip(service) for service in SERVICES]
-#    done, _ = await asyncio.wait(futures)
-#
-#    # Всем, кто выполнился - выписать результат
-#    for future in done:
-#        print(future.result())
-#
-## стандартный запуск
-#ioloop = asyncio.get_event_loop()
-#ioloop.run_until_complete(asynchronous())
-#ioloop.close()
+
+from collections import namedtuple
+import time
+import asyncio
+import aiohttp
+
+Service = namedtuple('Service', ('name', 'url', 'ip_attr'))
+
+SERVICES = (
+    Service('ipify', 'https://api.ipify.org?format=json', 'ip'),
+    Service('ip-api', 'http://ip-api.com/json', 'query'),
+    Service('borken', 'http://no-way-this-is-going-to-work.com/json', 'ip')
+)
+
+
+async def fetch_ip(service):
+    start = time.time()
+    print('Fetching IP from {}'.format(service.name))
+
+    # Ставим обработчик исключений
+    # Если все верно, то выполняем стандартный код
+    try:
+        async with aiohttp.request('GET', service.url) as response:
+            json_response = await response.json()
+            ip = json_response[service.ip_attr]
+            return ' >>> {} finished with result: {}, time: {:.2f} seconds'.format(
+                service.name, ip, time.time() - start)
+    # Иначе возвращаем строку с ошибкой
+    except:
+        return ' >>> {} is unresponsive'.format(service.name)
+
+    # В конце закрываем запрос.
+    response.close()
+
+
+async def asynchronous():
+    # Пробежка по Сервисам
+    futures = [fetch_ip(service) for service in SERVICES]
+    done, _ = await asyncio.wait(futures)
+
+    # Всем, кто выполнился - выписать результат
+    for future in done:
+        print(future.result())
+
+# стандартный запуск
+ioloop = asyncio.get_event_loop()
+ioloop.run_until_complete(asynchronous())
+ioloop.close()
 
 ##########################################################
 '''
@@ -284,8 +284,6 @@ loop.close()
 #         return '{} is unresponsive'.format(service.name)
 
 #     response.close()
-
-
 
 # async def asynchronous(timeout):
 #     # Библиотека значений для передачи в вывод.
