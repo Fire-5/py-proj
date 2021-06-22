@@ -40,6 +40,8 @@ urls = [
 def tic():
     return 'at %1.3f seconds' % (time.time() - start)
 
+#####################################################
+
 async def send(socket, url):
     req = 'GET /index.php HTTP/1.1\nHost: {}\nContent-Type: text/html\nConnection: close\n\n'.format(url[0]).encode()
     # Подключаемся по заранее указанному адресу
@@ -85,8 +87,11 @@ async def call_url(url):
         data = await response.text()
         # Выводим результат получения данных
         print('{}:{}: status:{} bytes: {} '.format(tic(), url[0],st, len(data)))
+
+
     response.close()
 
+#####################################################
 
 # Создание главного цикла
 loop = asyncio.get_event_loop()
