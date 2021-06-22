@@ -35,10 +35,11 @@ async def call_url(url):
         # Получаем данные в виде текста
         data = await response.text()
         # Выводим результат получения данных
-        print('{}:{}: {} bytes: {}'.format(tic(), url, len(data), 'data'))
+        #print('>>>> {}:{}: {} bytes: {}'.format(tic(), url, len(data), 'data'))
+        print(tic(), url, 'bytes:', len(data), 'data')
         return data
 
-#
+#Футура - объект с результатом выполнеиня задачи.
 futures = [call_url(url) for url in urls]
 
 # Создание главного цикла
@@ -330,9 +331,9 @@ loop.close()
 '''
 Функция map.
 '''
-import urllib3
+# import urllib3
 
-urls = ['http://www.yahoo.com', 'http://www.reddit.com']
-results = map(urllib3.urlopen, urls)
-print(results)
+# urls = ['http://www.yahoo.com', 'http://www.reddit.com']
+# results = map(urllib3.urlopen, urls)
+# print(results)
 
