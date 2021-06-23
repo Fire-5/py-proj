@@ -1,12 +1,23 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 16 17:47:32 2021
+import socket
 
-@author: alexa
-"""
-import time
+urls = []
+file_urls = open('urls.txt')
 
-t = time.time()
-seconds = t
-local_time = time.ctime(seconds)
-print("Местное время:", local_time)
+for line in file_urls:
+    print(line)
+    line = line.replace('\n', '')
+    nline = line.replace('https://', '')
+    nline = nline.replace('http://', '')
+    nline = nline.replace('www.', '')[:-1]
+    print(nline)
+    ip = socket.gethostbyname_ex(nline)
+    urls.append(ip)
+print(urls)
+
+
+
+
+
+
+
