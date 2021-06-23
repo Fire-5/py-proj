@@ -29,7 +29,7 @@ urls = [
     ['https://www.google.com/', '172.217.18.110', 443],
     ['https://yandex.ru/', '77.88.55.66'   , 443],
     ['https://www.python.org/', '138.197.63.241', 443],
-    ['https://vk.com/fire_5', '87.240.190.67', 443],
+    ['https://vk.com/', '87.240.190.67', 443],
     ['https://www.youtube.com/', '142.250.181.238', 443],
     ['https://mail.ru/', '94.100.180.201', 443]
 ]
@@ -80,13 +80,22 @@ async def call_url_socet(url):
 async def call_url(url):
     print('Starting ', url[0])
     # Асинхронный запрос 'GET' к сайту по url представить как "запрос"
-    async with aiohttp.request('GET', url[0]) as response:
+    async with aiohttp.request('GET', url[0]+'sitemap.xml') as response:
     #response = await aiohttp.get(url) # Не работает на py3.6
         # Получаем данные в виде текста
         st = response.status
+
         data = await response.text()
         # Выводим результат получения данных
+
         print('{}:{}: status:{} bytes: {} '.format(tic(), url[0],st, len(data)))
+        if st==200:
+            await asyncio.sleep(2)
+            print("#####################################################")
+            print(url[0], '\n\n')
+            print(data)
+            print("#####################################################\n\n")
+
 
 
     response.close()

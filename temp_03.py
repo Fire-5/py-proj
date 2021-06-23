@@ -14,8 +14,10 @@ async def fetch(session, url):
 
 async def main():
     async with aiohttp.ClientSession() as session:
-        xml_str = await fetch(session, 'https://www.dns-shop.ru/sitemap.xml')
-        root = etree.parse(xml_str)
+        xml_str = await fetch(session, 'https://www.google.com/sitemap.xml')
+        print('xml_str = ',type(xml_str))
+        root = etree.fromstring(xml_str)
+        print('root = ',type(root),'\n\n\n')
 
         for url in root.xpath('//*[local-name()="loc"]/text()'):
             print(url)
