@@ -1,23 +1,18 @@
 # -*- coding: utf-8 -*-
-import socket
+from subprocess import Popen, CREATE_NEW_CONSOLE
+import os
 
-urls = []
-file_urls = open('urls.txt')
-
-for line in file_urls:
-    print(line)
-    line = line.replace('\n', '')
-    nline = line.replace('https://', '')
-    nline = nline.replace('http://', '')
-    nline = nline.replace('www.', '')[:-1]
-    print(nline)
-    ip = socket.gethostbyname_ex(nline)
-    urls.append(ip)
-print(urls)
-
-
-
-
-
-
-
+process_list = [] #сюда будут попадать все клиентские процессы
+while True:
+    user = input('Запустить 10 клиентов (start) / Закрыть клиентов (close) / Выйти (quit) ')
+    if user == "quit":
+        break
+    elif user == "start":
+        for i in range(10):
+            process_list.append(Popen("python temp_04.py", creationflags =
+                                      CREATE_NEW_CONSOLE))
+            print("Запущено 10 клиентов")
+    elif user == "close":
+        for process in process_list:
+            process.kill()
+            process_list.clear() #очищаем список
