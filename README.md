@@ -2,14 +2,17 @@
  svzcom | mobilfon test
 
 ru-RU:
+
 Требования: 
  - Python 3.6
+
 Библиотеки:
  - aiohttp
  - asyncio
  - socket
  - lxml
  - urllib (нужен был в каком то из примеров)
+
 Для установки всех библиотек сразу: pip install -r requirements.txt
 
 Установка:
