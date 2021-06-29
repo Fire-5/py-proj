@@ -57,10 +57,12 @@ def del_socket(sock, inputs, outputs):
     sock.close()
 
 def listen_socket(sock):
-    data = sock.recv(1024).decode('utf-8')
-    # if data:
-    #     for line in data:
-    #         print('> ',line)
+    data = ''
+    while True:
+        temp = sock.recv(1024)
+        data = data + temp.decode('utf-8')
+        if temp == '':
+            break
     return data
 
 ################################################################
@@ -100,7 +102,7 @@ messages = []   # здесь будем хранить сообщения для
 # <text>{}<text/>'''
 # print(response.format('400', 'Bad Request', len(response), local_time, 'close'))
 
-
+print('START')
 while True:
     Code = 200
     Desc = 'Connect'
@@ -127,7 +129,9 @@ while True:
             # если это НЕ серверный сокет, то
             # клиент хочет что-то сказать
             data = listen_socket(conn)
+            print(local_time, '> Клиент прислал сообщение...')
             text_data = search_text(conn, data)
+            print(local_time, '> {}'.format(text_data))
             if conn not in outputs:
                 outputs.append(conn)
 
@@ -140,6 +144,7 @@ while True:
 
     # список SEND - сокеты, готовые принять сообщение
     for conn in send:
+        print(local_time, '> Отправляю ответ...')
         if text_data == 'Hello world!':
             send_message(sock, 'open')
         else:
@@ -153,3 +158,7 @@ while True:
     for conn in excepts:
         # удаляем сокет с ошибкой из всех очередей
         del_socket(conn, inputs, outputs)
+
+
+
+print('CLOSE')

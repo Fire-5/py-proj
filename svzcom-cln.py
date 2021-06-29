@@ -6,7 +6,7 @@ import time
 
 print(' >>> start <<< ')
 
-IP = '127.0.0.1'  # Удаленный хост
+HOST = '127.0.0.1'  # Удаленный хост
 PORT = 8008         # тот же порт, что и у сервера
 local_time = time.ctime(time.time())
 
@@ -15,7 +15,7 @@ outputs = []    # сокеты, в которые надо писать
 
 
 def dispetcher():
-    addr = (IP, PORT)
+    addr = (HOST, PORT)
     text_line = client_gen(addr)
     while True:
         text = next(text_line)
@@ -25,25 +25,44 @@ def dispetcher():
 
 def client_gen(addr):
     # Подключение
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(addr)
-    send_message(sock, 'open')
+    print('... connect ...')
+    Date = time.ctime(time.time())
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect(addr)
+        print('... connected!')
+        message = '''GET / HTTP/1.1
+        Host: localhost
+        Accept: text
+        Content-Length: {}
+        Date: {}
+        Connection: {}
 
-    data = listen_socket(sock)
-    text = search_text(sock, data)
-    yield text
+        <text>{}<text/>
+        '''
+        message.format(len(message), Date, 'await', 'Hello world!')
+        s.sendall(message.encode('utf-8'))
+        text = s.recv(1024)
+        print(text.decode('utf-8'))
+        yield text
 
-    # Передача информации
-    send_message(sock, 'text')
-    data = listen_socket(sock)
-    text = search_text(sock, data)
-    yield text
+        # Передача информации
+        print('... send text ...')
+        message.format(len(message), Date, 'await',
+                       'V lesu rodilas` yelochka')
+        s.sendall(message.encode('utf-8'))
+        text = s.recv(1024)
+        print(text.decode('utf-8'))
+        yield text
 
-    # Отключеение
-    send_message(sock, 'text')
-    data = listen_socket(sock)
-    text = search_text(sock, data)
-    yield text
+        # Отключеение
+        print('... client out line ...')
+        message.format(len(message), Date, 'Close', 'Client out line')
+        s.sendall(message.encode('utf-8'))
+        text = s.recv(1024)
+        print(text.decode('utf-8'))
+        yield text
+
+
 
 def listen_socket(sock):
     data = sock.recv(1024).decode('utf-8')
