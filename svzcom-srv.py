@@ -108,8 +108,9 @@ while True:
     Date = local_time
 
     # вызов `select.select`
-    reads, send, excepts = select.select(inputs, outputs, inputs)
-
+    reads, send, excepts = select.select(inputs,
+                                         outputs,
+                                         inputs)
 
     # список READS - сокеты, готовые к чтению
     for conn in reads:
@@ -117,7 +118,8 @@ while True:
             # если это серверный сокет, то пришел новый
             # клиент, принимаем подключение
             new_conn, client_addr = conn.accept()
-            print(local_time, '> Успешное подключение от:', client_addr)
+            print(local_time, '> Успешное подключение от:',
+                  client_addr)
             new_conn.setblocking(False)
             inputs.append(new_conn)
 
