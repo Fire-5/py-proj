@@ -45,11 +45,11 @@ class Client(object):
         while True:
             self.reads, self.send, self.excepts = select.select(self.inputs, self.outputs, self.excepts)
             print(len(self.outputs), len(self.inputs))
-
+            message = ''
             for sock in self.reads:
                 local_time = time.ctime(time.time())
                 data = sock.recv(4096)
-                message = data.decode()
+                message = message + local_time + ':' + data.decode() + '\n'
                 print(local_time, '>', message)
 
 
