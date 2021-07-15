@@ -84,7 +84,7 @@ class Server(object):
         while True:
             self.reads, self.send, self.excepts = select.select(self.inputs, self.outputs, self.excepts)
             message = ''
-
+            print(len(self.outputs), len(self.inputs). len(message))
             for sock in self.reads:
                 if sock == self.server_socket:
                     new_conn = self.setup_connection()
