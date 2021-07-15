@@ -1,114 +1,213 @@
-# -*- coding: utf-8 -*-
-# server.py
+import socket as sockets
 import select
-import socket
 import time
 
-local_time = time.ctime(time.time())
-log = []
-print('Для выключения сервера нажмите Ctrl+C.')
-
-sock = socket.socket()
-sock.bind(('localhost', 8008))
-sock.listen(5)
-sock.setblocking(False)
-
-inputs = [sock] # сокеты, которые будем читать
-outputs = []    # сокеты, в которые надо писать
-messages = []   # здесь будем хранить сообщения для сокетов
 
 
-log.append(local_time +' >>> Ожидание подключения...\n')
-print(local_time,'Ожидание подключения...\n')
+class Server(object):
+    # List to keep track of socket descriptors
+    CONNECTION_LIST = {}
+    # {SOCKET : NAME}
+    RECV_BUFFER = 4096  # Advisable to keep it as an exponent of 2
+    PORT = 5000
 
-while True:
-    # вызов `select.select` который проверяет сокеты в
-    # списках: `inputs`, `outputs` и по готовности, хотя бы
-    # одного - возвращает списки: `reads`, `send`, `excepts`
-    reads, send, excepts = select.select(inputs, outputs, inputs)
+    inputs = []                     # сокеты, которые будем читать
+    outputs = []                    # сокеты, в которые надо писать
+    excepts = []                    # сокеты, которые надо закрыть
 
-    # Далее проверяются эти списки, и принимаются
-    # решения в зависимости от назначения списка
+    def __init__(self):
+        print("... Init...")
+        self.server_socket = sockets.socket(sockets.AF_INET,
+                                            sockets.SOCK_STREAM)
+        self.set_up_connections()
+        self.client_connect()
 
-    # список READS - сокеты, готовые к чтению
-    for conn in reads:
-        if conn == sock:
-            # если это серверный сокет, то пришел новый
-            # клиент, принимаем подключение
-            new_conn, client_addr = conn.accept()
-            log.append(local_time +' >>> Успешное подключение!\n')
-            print('Успешное подключение!')
+    def set_up_connections(self):
+        print("... Setup...")
+        # this has no effect, why ?
+        self.server_socket.setsockopt(sockets.SOL_SOCKET,
+                                       sockets.SO_REUSEADDR, 1)
+        self.server_socket.bind(("127.0.0.1", self.PORT))
+        self.server_socket.listen(10)  # max simultaneous connections.
 
-            # устанавливаем неблокирующий сокет
-            new_conn.setblocking(False)
+        # Add server socket to the list of readable connections
+        self.CONNECTION_LIST[self.server_socket] = 'SERVER'
 
-            # поместим новый сокет в очередь на прослушивание
-            inputs.append(new_conn)
+    def setup_connection(self):
+        print("... Connection...")
+        sockfd, addr = self.server_socket.accept()
+        name = self.set_client_user_name(sockfd)
+        self.CONNECTION_LIST[sockfd] = name
+        print("Client {} connected".format(name))
+        return sockfd
 
-        else:
-            # если это НЕ серверный сокет, то
-            # клиент хочет что-то сказать
-            data = conn.recv(1024)
-
-            if data:
-                # если сокет прочитался и есть сообщение
-                # то кладем сообщение в словарь, где
-                # ключом будет сокет клиента
-                messages.append(data)
-                log.append(local_time + data.decode())
-
-                # добавляем соединение клиента в очередь
-                # на готовность к приему сообщений от сервера
-                if conn not in outputs:
-                    outputs.append(conn)
-
-            else:
-                log.append(local_time +' >>> Клиент отключился...\n')
-                print('Клиент отключился...')
-                # если сообщений нет, то клиент
-                # закрыл соединение или отвалился
-                # удаляем его сокет из всех очередей
-                if conn in outputs:
-                    outputs.remove(conn)
-
-                inputs.remove(conn)
-
-                # закрываем сокет как положено, тем
-                # самым очищаем используемые ресурсы
-                conn.close()
-
-                # # удаляем сообщения для данного сокета
-                # del messages[conn]
-
-    # список SEND - сокеты, готовые принять сообщение
-    for conn in send:
-        # выбираем из словаря сообщения
-        # для данного сокета
-        for imess in messages:
-            msg = imess
-
-        if len(imess):
-            # если есть сообщения - то отсылаем
-            temp = messages[0].decode('utf-8')
-            conn.send(temp.encode())
-
-        else:
-            # если нет сообщений - удаляем из очереди
-            # сокетов, готовых принять сообщение
-            outputs.remove(conn)
-        messages.pop(0)
+    def listen_data_to(self, sock):
+        text = ''
+        try:
+            data = sock.recv(self.RECV_BUFFER)
+            text = data.decode()
+            return text
+        except:
+            print(' >>> NO DATA <<<')
+            return ''
 
 
-    # список EXCEPTS - сокеты, в которых произошла ошибка
-    for conn in excepts:
-        log.append(local_time +' >>> Клиент отвалился...\n')
-        print('Клиент отвалился...')
-        # удаляем сокет с ошибкой из всех очередей
-        inputs.remove(conn)
-        if conn in outputs:
-            outputs.remove(conn)
-        # закрываем сокет как положено, тем
-        # самым очищаем используемые ресурсы
-        conn.close()
-        # удаляем сообщения для данного сокета
-        del messages[conn]
+    def set_client_user_name(self, sock):
+        print("... Setup client ...")
+        self.send_data_to(sock, "please enter a username: ")
+        name = self.listen_data_to(sock)
+        return name
+
+    def send_data_to(self, sock, message):
+        print("... Send to {}: {}...".format(sock.getsockname(), message))
+        try:
+            sock.send(message.encode('utf-8'))
+            self.outputs.append(sock)
+        except:
+            # broken socket connection may be,
+            # chat client pressed ctrl+c for example
+            print("Client {} not responseble".format(sock.getsockname()))
+            self.excepts.append(sock)
+
+    # Function to broadcast chat messages to all connected clients
+    def broadcast_message(self, sock, message):
+        for socket in self.CONNECTION_LIST:
+            if socket != self.server_socket and socket != sock:
+                socket.send(message.encode('utf-8'))
+
+
+    def client_connect(self):
+        self.inputs.append(self.server_socket)
+
+        print("Chat server started on port " + str(self.PORT))
+
+        while True:
+            self.reads, self.send, self.excepts = select.select(self.inputs, self.outputs, self.excepts)
+            message = ''
+
+            for sock in self.reads:
+                if sock == self.server_socket:
+                    new_conn = self.setup_connection()
+                    # поместим новый сокет в очередь на прослушивание
+                    self.inputs.append(new_conn)
+                else:
+                    # data = sock.recv(self.RECV_BUFFER)
+                    name = self.CONNECTION_LIST[sock]
+                    data = self.listen_data_to(sock)
+                    message = message + name + data + '\n'
+
+
+            for sock in self.send:
+                if len(message):
+                    # если есть сообщения - то отсылаем
+                    self.broadcast_message(sock, message)
+                else:
+                    # если нет сообщений - удаляем из очереди
+                    self.outputs.remove(sock)
+
+
+
+            for sock in self.excepts:
+                print("... Client {} disconnected".format(sock.getsockname()))
+                self.broadcast_message(sock, "Client {} disconnected".format(sock.getsockname()))
+                # удаляем сокет с ошибкой из всех очередей
+                if sock in self.inputs:
+                    self.inputs.remove(sock)
+                if sock in self.outputs:
+                    self.outputs.remove(sock)
+                sock.close()
+
+        print("... Close ...")
+        self.server_socket.close()
+
+
+
+
+        #     reads, send, excepts = select.select(inputs, outputs, excepts)
+        #     # список READS - сокеты, готовые к чтению
+        #     for sock in reads:
+        #         print("... R ...")
+        #         if sock == self.server_socket:
+        #             new_conn = self.setup_connection()
+        #             # поместим новый сокет в очередь на прослушивание
+        #             inputs.append(new_conn)
+        #         else:
+        #             try:
+        #                 data = sock.recv(self.RECV_BUFFER)
+        #                 if data:
+        #                     if self.user_name_dict[sock].username is None:
+        #                         self.set_client_user_name(data, sock)
+        #                         outputs.append(sock)
+
+        #             except:
+        #                 addr = sock.getsockname()
+        #                 self.broadcast_data(sock, "Client {} is offline".format(addr))
+        #                 print("Client {} is offline".format(addr))
+        #                 self.CONNECTION_LIST.remove(sock)
+        #                 continue
+
+        #     # список SEND - сокеты, готовые принять сообщение
+        #     for conn in send:
+        #         print("... S...")
+        #         self.broadcast_data(sock, "\r" + '<' + self.user_name_dict[sock].username + '> ' + data)
+        #         if sock not in inputs:
+        #             inputs.append(sock)
+        #         outputs.remove(conn)
+
+        #     # список EXCEPTS - сокеты, в которых произошла ошибка
+        #     for conn in excepts:
+        #         print("... E...")
+        #         # удаляем сокет с ошибкой из всех очередей
+        #         if sock in inputs:
+        #             inputs.remove(sock)
+        #         if sock in outputs:
+        #             outputs.remove(sock)
+        #         sock.close()
+
+        #     print(time.time() - start)
+        #     time.sleep(1)
+        #     if (time.time() - start) > 60:
+        #         break
+
+        # print("... Close ...")
+        # self.server_socket.close()
+
+
+        #     for sock in read_sockets:
+        #         # New connection
+        #         if sock == self.server_socket:
+        #             # Handle the case in which there is
+        #             # a new connection recieved through server_socket
+        #             self.setup_connection()
+        #         # Some incoming message from a client
+        #         else:
+        #             # Data recieved from client, process it
+        #             try:
+        #                 data = sock.recv(self.RECV_BUFFER)
+        #                 if data:
+        #                     if self.user_name_dict[sock].username is None:
+        #                         self.set_client_user_name(data, sock)
+        #                     else:
+        #                         self.broadcast_data(sock, "\r" + '<' + self.user_name_dict[sock].username + '> ' + data)
+
+        #             except:
+        #                 addr = sock.getaddrinfo
+        #                 self.broadcast_data(sock, "Client {} is offline".format(addr))
+        #                 print("Client {} is offline".format(addr))
+        #                 sock.close()
+        #                 self.CONNECTION_LIST.remove(sock)
+        #                 continue
+        # self.server_socket.close()
+
+
+
+
+class Connection(object):
+    def __init__(self, address):
+        self.address = address
+        self.username = None
+
+
+if __name__ == "__main__":
+    start = time.time()
+    server = Server()

@@ -122,13 +122,17 @@ while True:
             new_conn, client_addr = conn.accept()
             print(local_time, '> Успешное подключение от:',
                   client_addr)
+            new_conn.listen()
             new_conn.setblocking(False)
             inputs.append(new_conn)
 
         else:
             # если это НЕ серверный сокет, то
             # клиент хочет что-то сказать
-            data = listen_socket(conn)
+            # data = listen_socket(conn)
+            data = ''
+            temp = sock.recv(1024)
+            data = data + temp.decode('utf-8')
             print(local_time, '> Клиент прислал сообщение...')
             text_data = search_text(conn, data)
             print(local_time, '> {}'.format(text_data))
