@@ -1,3 +1,4 @@
+#!python3.6
 # -*- coding: utf-8 -*-
 import socket as sockets
 import select

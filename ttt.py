@@ -1,3 +1,5 @@
+#!python3.6
+
 import os
 import msvcrt
 import time
