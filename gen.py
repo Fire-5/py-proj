@@ -52,15 +52,36 @@ Connection: close
     return req
 
 
+def socket_call(sock, msg):
+    sock.send(msg)
+    data = []
+
+    while True:
+        raw = sock.recv(4096)
+        data.append(raw.decode('utf-8'))
+        if len(raw) == 0:
+            break
+
+    return data
+
+
+def socket_create(addr):
+    HOST, PORT = addr.split(':')
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((HOST, int(PORT)))
+    return sock
+
+
 def generator(task_url):
     '''
-    1. выявление айпи
+    1. выявление адреса, сборка запроса
     2. Получение сокета, подключение, проверка статуса
     2. Если ок, парсим данные
     3. Отправляем набор ссылок на картинки
     4. закрываем
 
     '''
+    # 1 выявление адреса, сборка запроса
     if 'https://' in task_url:
         PORT = '443'
         task_url = task_url[8:]
@@ -69,32 +90,20 @@ def generator(task_url):
         task_url = task_url[7:]
 
     req = request(task_url)
-    # print(req)
-
     try:
         HOST = socket.gethostbyname(task_url)
-        yield HOST + ':' + PORT, Status.GOOD
-
+        yield HOST + ':' + PORT, req, Status.GOOD
     except:
         HOST = '127.0.0.1'
-        yield HOST + ':' + PORT, Status.ERROR
+        yield HOST + ':' + PORT, req, Status.ERROR
 
-    _socket = (yield)
-    data = []
-    while True:
-
-        _socket.send(req)
-        raw = _socket.recv(4096)
-        tmp = raw.decode()
-        data.append(tmp)
-        if _socket.complete():
-            break
-        # отдаём слушать следующий пакет от сервера
-        yield (_socket, Status.AGAIN)
-
-    payload = data
-    print(payload)
-    yield
+    # 2 получение сокета
+    sock = socket_create(HOST + ':' + PORT)
+    yield sock, Status.GOOD
+    
+    data = socket_call(sock, req)
+    stat = data
+    yield stat, Status.GOOD
 
 
 #

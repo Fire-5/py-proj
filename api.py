@@ -18,20 +18,8 @@ import gen
 from gen import Status
 
 inputs = []
-outputs = []
-excepts = []
 
-
-def socket_create(addr):
-    HOST, PORT = addr.split(':')
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((HOST, int(PORT)))
-    inputs.append(sock)
-    return sock
-
-
-
-urls1 = ['https://api.github.com', 'https://mail.ru']
+urls1 = ['https://api.github.com']
 urls2 = [
     'http://www.google.com',
     'http://www.yandex.ru',
@@ -42,22 +30,31 @@ urls2 = [
     'http://tapochek.net'
 ]
 
-generators = map(gen.generator, urls1)
+generators = map(gen.generator, urls2)
 
 for task in generators:
-    addr, status = next(task)
+    # 1 выявление адреса, сборка запроса
+    addr, msg, status = next(task)
     if status != Status.GOOD:
         task.close()
         break
     
-    sock = socket_create(addr)
-    task.send(sock)
-    next(task)
-    print('/n/n/n/n')
+    # 2 получение сокета
+    sock, status = next(task)
+    if status != Status.GOOD:
+        task.close()
+        break
+    
+
+    stat, status = next(task)
+    if status != Status.GOOD:
+        task.close()
+        break
+    print(stat)
     
     
 
-# reads, send, excepts = select.select(inputs, outputs, excepts)
+# 
 
 # while True:
 #     for sock in reads:
