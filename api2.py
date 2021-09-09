@@ -17,7 +17,7 @@ def socket_listen(sock, msg):
             break
     return data
 
-class St(Enum):
+class Status(Enum):
     AGAIN = 1
     CLOSE = 2
     FETCH = 3
@@ -36,47 +36,63 @@ urls2 = [
     'http://tapochek.net'
 ]
 
-generators = map(gen2.generator, urls1)
+# generators = map(gen2.generator, urls1)
+generators = [gen2.generator('https://api.github.com')]
 tasks = {}
 
 for task in generators:
     # 1
     addres, st = next(task)
-    if st != St.GOOD:
-        print(' ---> task close')
+    if st != Status.GOOD:
+        print(st, ' ---> task close')
         task.close()
 
-    # 3
+    # 2
     socket, st = next(task)
-    if st != St.GOOD:
+    if st != Status.GOOD:
         print(' ---> task close')
-        task.CLOSE()
+        task.close()
     else:
         tasks[socket] = task
         outputs.append(socket)
+
+print(tasks)
 
 while True:
     rsock, wsock, ersock = select.select(inputs, outputs, errors)
     
     for sock in rsock:
         # прием сообщенией.
-        rep = socket_listen(sock)
-        tasks[sock].send(rep)
+        report = socket_listen(sock)
+        tasks[sock].send(report) # 4
+        
+        msg, st = next(tasks[sock]) # 5
+        if st == Status.FETCH:
+            print(msg)
+        if st == Status.CLOSE:
+            inputs.remove(sock)
+            errors.append(sock)
+            
         inputs.remove(sock)
         outputs.append(sock)
         
         
     for sock in wsock:
-        # отправка сообщений
+        # отправка сообщений (3)
         msg, st = next(tasks[sock])
-        if st == St.OPEN:
+        if st == Status.OPEN:
             sock.send(msg)
             inputs.append(sock)
             outputs.remove(sock)
+        if st == Status.CLOSE:
+            inputs.remove(sock)
+            errors.append(sock)
+        
 
 
     for sock in ersock:
         # удаление сокета.
+        print(' ---> task close')
         tasks[sock].close()
         sock.close()
 
