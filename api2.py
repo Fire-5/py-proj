@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-import gen2
 import select
+
+import gen2
 
 
 def socket_listen(sock):
@@ -13,6 +14,7 @@ def socket_listen(sock):
         if len(raw) == 0:
             break
     return data
+
 
 Status = gen2.Status
 
@@ -62,10 +64,10 @@ while True:
         report = socket_listen(sock)
         print('>>> \n\n', report, '\n\n')
         local_task = tasks[sock]
-        local_task.send(report) # 4
+        local_task.send(report) # 4 Отправка в генератор
 
         local_task = tasks[sock]
-        msg, st = next(local_task) # 5
+        msg, st = next(local_task) # 5 отчет от генератора
         if st == Status.FETCH:
             print(msg)
         
@@ -73,7 +75,6 @@ while True:
             errors.append(sock)
 
         outputs.append(sock)
-        
         
     for sock in wsock:
         # отправка сообщений
@@ -90,8 +91,6 @@ while True:
         if st == Status.CLOSE:
             errors.append(sock)
         
-
-
     for sock in ersock:
         # удаление сокета.
         inputs.remove(sock)
@@ -99,12 +98,3 @@ while True:
         print(' ---> task close')
         tasks[sock].close()
         sock.close()
-
-
-
-
-
-
-
-
-

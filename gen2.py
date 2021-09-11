@@ -81,12 +81,12 @@ def generator(task_url):
     yield message, Status.OPEN
 
     print(task_url[:8], '4')     
-    # 4
+    # 4 Прием извне данных
     report = yield()
     st_report = check(report)
 
     print(task_url[:8], '5')
-    # 5
+    # 5 Отправка обработанных данных
     str_None = 'None'
     if st_report != '200':
         yield str_None, Status.CLOSE
@@ -106,19 +106,3 @@ def generator(task_url):
         
     else:
         yield str_None, Status.CLOSE
-         
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
