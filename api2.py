@@ -1,29 +1,24 @@
 # -*- coding: utf-8 -*-
 import gen2
-from enum import Enum
 import select
 
 
-inputs = []
-outputs = []
-errors = []
-
-def socket_listen(sock, msg):
+def socket_listen(sock):
     data = []
+    chance = 0
     while True:
         raw = sock.recv(4096)
-        data.append(raw.decode('utf-8'))
+        # data.append(raw.decode('utf-8'))
+        data = raw.decode('utf-8')
         if len(raw) == 0:
             break
     return data
 
-class Status(Enum):
-    AGAIN = 1
-    CLOSE = 2
-    FETCH = 3
-    OPEN = 4
-    GOOD = 5
-    ERROR = 6
+Status = gen2.Status
+
+inputs = []
+outputs = []
+errors = []
 
 urls1 = ['https://api.github.com']
 urls2 = [
@@ -36,18 +31,18 @@ urls2 = [
     'http://tapochek.net'
 ]
 
-# generators = map(gen2.generator, urls1)
-generators = [gen2.generator('https://api.github.com')]
+generators = map(gen2.generator, urls2)
+# generators = [gen2.generator('https://api.github.com')]
 tasks = {}
 
 for task in generators:
-    # 1
+    # 1 Определение ip-адреса
     addres, st = next(task)
     if st != Status.GOOD:
         print(st, ' ---> task close')
         task.close()
 
-    # 2
+    # 2 Подключение к сайту
     socket, st = next(task)
     if st != Status.GOOD:
         print(' ---> task close')
@@ -56,7 +51,8 @@ for task in generators:
         tasks[socket] = task
         outputs.append(socket)
 
-print(tasks)
+print('>>>', tasks)
+print()
 
 while True:
     rsock, wsock, ersock = select.select(inputs, outputs, errors)
@@ -64,34 +60,42 @@ while True:
     for sock in rsock:
         # прием сообщенией.
         report = socket_listen(sock)
-        tasks[sock].send(report) # 4
-        
-        msg, st = next(tasks[sock]) # 5
+        print('>>> \n\n', report, '\n\n')
+        local_task = tasks[sock]
+        local_task.send(report) # 4
+
+        local_task = tasks[sock]
+        msg, st = next(local_task) # 5
         if st == Status.FETCH:
             print(msg)
+        
         if st == Status.CLOSE:
-            inputs.remove(sock)
             errors.append(sock)
-            
-        inputs.remove(sock)
+
         outputs.append(sock)
         
         
     for sock in wsock:
-        # отправка сообщений (3)
-        msg, st = next(tasks[sock])
+        # отправка сообщений
+        # 3 получение запроса от генератора
+        # print('>>>', type(tasks[sock]))
+
+        local_task = tasks[sock]
+        msg, st = next(local_task)
         if st == Status.OPEN:
             sock.send(msg)
             inputs.append(sock)
-            outputs.remove(sock)
+            
+
         if st == Status.CLOSE:
-            inputs.remove(sock)
             errors.append(sock)
         
 
 
     for sock in ersock:
         # удаление сокета.
+        inputs.remove(sock)
+        outputs.remove(sock)
         print(' ---> task close')
         tasks[sock].close()
         sock.close()

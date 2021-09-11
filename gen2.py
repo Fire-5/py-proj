@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-from enum import Enum
+import enum
 import socket
 # import BeautifulSoup
 
 
-class Status(Enum):
-    AGAIN = 1
-    CLOSE = 2
-    FETCH = 3
-    OPEN = 4
-    GOOD = 5
-    ERROR = 6
+class Status(enum.Enum):
+    AGAIN = enum.auto()
+    CLOSE = enum.auto()
+    FETCH = enum.auto()
+    OPEN  = enum.auto()
+    GOOD  = enum.auto()
+    ERROR = enum.auto()
 
 
 def request(task_url):
@@ -26,15 +26,18 @@ Connection: close
     return req
 
 def check(report):
-    temp = report.split('\n')
-    status = temp[0].split()
-    return status[1]
+    try:
+        temp = report[0].split('\n')
+        status = temp[0].split()
+        return status[1]
+    except:
+        return '400'
     
 def parsing(report):
     data = report.split('\n')
     n_body = 0
     for ind, item in enumerate(data):
-        if item == '\r':
+        if item == '\r':    
             n_body = ind + 1
             print(n_body)
             
@@ -44,9 +47,10 @@ def parsing(report):
     return data
 
 def generator(task_url):
+    print(task_url[7:15], '1')
     # 1 Определение ip-адреса
     if 'https://' in task_url:
-        PORT = '443'
+        PORT = '80'
         task_url = task_url[8:]
     elif 'http://' in task_url:
         PORT = '80'
@@ -59,26 +63,33 @@ def generator(task_url):
         HOST = '127.0.0.1'
         yield HOST + ':' + PORT, Status.CLOSE
     
+    print(task_url[:8], '2')
     # 2 Подключение к сайту
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.connect((HOST, int(PORT)))
-        yield sock, Status.GOOD
+        st = Status.GOOD
     except:
         print*(' ---> Error connect to {}'.format(task_url))
-        yield sock, Status.CLOSE
-        
-    # 3
+        st = Status.CLOSE
+    finally:
+        yield sock, st
+
+    print(task_url[:8], '3')
+    # 3 создание запроса
     message = request(task_url)
-    yield message, Status.GOOD
-        
+    yield message, Status.OPEN
+
+    print(task_url[:8], '4')     
     # 4
-    report = yield
-    
+    report = yield()
     st_report = check(report)
+
+    print(task_url[:8], '5')
     # 5
+    str_None = 'None'
     if st_report != '200':
-        yield None, Status.CLOSE
+        yield str_None, Status.CLOSE
     
     dt_report = parsing(report)
     if 'img' in dt_report:
@@ -94,7 +105,7 @@ def generator(task_url):
         yield urls, Status.FETCH
         
     else:
-        yield None, Status.CLOSE
+        yield str_None, Status.CLOSE
          
     
     
