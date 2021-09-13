@@ -14,11 +14,11 @@ class Status(enum.Enum):
 
 
 def request(task_url):
-    req = """
-GET / HTTP/1.1
-Host: {}
-Accept: text/html
-Connection: close
+    req = """GET / HTTP/1.1
+User-Agent: python-requests/2.26.0
+Accept-Encoding: gzip, deflate
+Accept: */*
+Connection: keep-alive
 \r
 \r
 """.format(task_url)
@@ -34,27 +34,29 @@ def check(report):
         return '400'
     
 def parsing(report):
-    data = report.split('\n')
-    n_body = 0
-    for ind, item in enumerate(data):
-        if item == '\r':    
-            n_body = ind + 1
-            print(n_body)
-            
-    for i in range(n_body):
-        l = data.pop(0)
-        print(i, l)
-    return data
+    try:
+        data = report.split('\n')
+        n_body = 0
+        for ind, item in enumerate(data):
+            if item == '\r':    
+                n_body = ind + 1
+                print(n_body)
+                
+        for i in range(n_body):
+            l = data.pop(0)
+        return data
+    except:
+        return "No data"
 
-def generator(task_url):
-    print(task_url[7:15], '1')
+def generator(raw_url):
+    print("{:<25} {}".format(raw_url, 'Step 1'))
     # 1 Определение ip-адреса
-    if 'https://' in task_url:
+    if 'https://' in raw_url:
         PORT = '80'
-        task_url = task_url[8:]
-    elif 'http://' in task_url:
+        task_url = raw_url[8:]
+    elif 'http://' in raw_url:
         PORT = '80'
-        task_url = task_url[7:]
+        task_url = raw_url[7:]
 
     try:
         HOST = socket.gethostbyname(task_url)
@@ -63,7 +65,7 @@ def generator(task_url):
         HOST = '127.0.0.1'
         yield HOST + ':' + PORT, Status.CLOSE
     
-    print(task_url[:8], '2')
+    print("{:<25} {}".format(raw_url, 'Step 2'))
     # 2 Подключение к сайту
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -75,25 +77,25 @@ def generator(task_url):
     finally:
         yield sock, st
 
-    print(task_url[:8], '3')
+    print("{:<25} {}".format(raw_url, 'Step 3'))
     # 3 создание запроса
     message = request(task_url)
     yield message, Status.OPEN
 
-    print(task_url[:8], '4')     
+    print("{:<25} {}".format(raw_url, 'Step 4'))    
     # 4 Прием извне данных
     report = yield()
-    st_report = check(report)
+    # print("{:<25} {}".format(raw_url, 'Report'), report)
 
-    print(task_url[:8], '5')
     # 5 Отправка обработанных данных
+    st_report = check(report)
     str_None = 'None'
     if st_report != '200':
         yield str_None, Status.CLOSE
-    
+
+    print ("{:<25} {}".format(raw_url, 'Step 5'), st_report)    
     dt_report = parsing(report)
     if 'img' in dt_report:
-
         urls = []
         copy_dt = dt_report.copy()
         for line in copy_dt:
@@ -102,7 +104,12 @@ def generator(task_url):
                 line.rstrip('>')
                 line = task_url + "/" + line
                 urls.append(line)
+        print ("{:<25} {}".format(raw_url, 'FINISH'))
         yield urls, Status.FETCH
+
         
     else:
         yield str_None, Status.CLOSE
+
+    print ("{:<25} {}".format(raw_url, 'ERROR'))
+    yield 'Finish', Status.CLOSE
