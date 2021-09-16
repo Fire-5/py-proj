@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import enum
 import socket
-# import BeautifulSoup
+import requests
+
 
 
 class Status(enum.Enum):
@@ -13,19 +14,39 @@ class Status(enum.Enum):
     ERROR = enum.auto()
 
 
+# def request(task_url):
+# ''' старая версия функции, которая собирает HTTP-запрос GET 
+# из строки. В целом работает, но почти все сайты видят 
+# этот вариант ошибочным (код ошибки 400)'''
+
+#     req = """GET / HTTP/1.1
+# User-Agent: python-requests/2.26.0
+# Accept-Encoding: gzip, deflate
+# Accept: */*
+# Connection: keep-alive
+# \r
+# \r
+# """.format(task_url)
+#     req = req.encode('utf-8')
+#     return req
+
 def request(task_url):
-    req = """GET / HTTP/1.1
-User-Agent: python-requests/2.26.0
-Accept-Encoding: gzip, deflate
-Accept: */*
-Connection: keep-alive
-\r
-\r
-""".format(task_url)
-    req = req.encode('utf-8')
-    return req
+    ''' обновленная версия метода создания запроса к сайту.
+    Используется библиотека Requests. В данном варианте
+    ответы на запрос возвращаются с ошибкой 400'''
+
+    r = requests.Request('GET', task_url)
+    req = r.prepare()
+    request = """{} {} HTTP/1.1
+Host: developer.mozilla.org
+
+""".format(req.method, req.path_url, req.url)
+    request = request.encode('utf-8')
+    return request
 
 def check(report):
+    ''' метод проверки кода ответа на запрос'''
+
     try:
         temp = report[0].split('\n')
         status = temp[0].split()
@@ -34,6 +55,9 @@ def check(report):
         return '400'
     
 def parsing(report):
+    ''' метод обработки входящего сообщения. 
+    Кустарно реализовано отсечение заголовков от тела ответа'''  
+
     try:
         data = report.split('\n')
         n_body = 0
@@ -49,7 +73,11 @@ def parsing(report):
         return "No data"
 
 def generator(raw_url):
-    print("{:<25} {}".format(raw_url, 'Step 1'))
+    ''' Функция-генератор, которая контролирует все действия к сайту,
+    формирует запросы и парсит данные отправляя наружу 
+    только нужный объект данных и статус'''
+
+    print("{:<25} {}".format(raw_url, 'Step 1\r'))
     # 1 Определение ip-адреса
     if 'https://' in raw_url:
         PORT = '80'
@@ -65,35 +93,34 @@ def generator(raw_url):
         HOST = '127.0.0.1'
         yield HOST + ':' + PORT, Status.CLOSE
     
-    print("{:<25} {}".format(raw_url, 'Step 2'))
+    print("{:<25} {}".format(raw_url, 'Step 2\r'))
     # 2 Подключение к сайту
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.connect((HOST, int(PORT)))
         st = Status.GOOD
     except:
-        print*(' ---> Error connect to {}'.format(task_url))
+        print(' ---> Error connect to {}'.format(task_url))
         st = Status.CLOSE
     finally:
         yield sock, st
 
-    print("{:<25} {}".format(raw_url, 'Step 3'))
+    print("{:<25} {}".format(raw_url, 'Step 3\r'))
     # 3 создание запроса
-    message = request(task_url)
+    message = request(raw_url)
     yield message, Status.OPEN
 
-    print("{:<25} {}".format(raw_url, 'Step 4'))    
+    print("{:<25} {}".format(raw_url, 'Step 4\r'))    
     # 4 Прием извне данных
     report = yield()
-    # print("{:<25} {}".format(raw_url, 'Report'), report)
-
+    
     # 5 Отправка обработанных данных
     st_report = check(report)
     str_None = 'None'
     if st_report != '200':
         yield str_None, Status.CLOSE
 
-    print ("{:<25} {}".format(raw_url, 'Step 5'), st_report)    
+    print ("{:<25} {}".format(raw_url, 'Stepи 5 '), st_report)    
     dt_report = parsing(report)
     if 'img' in dt_report:
         urls = []

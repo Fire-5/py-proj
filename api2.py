@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 import select
-
 import gen2
 
 
 def socket_listen(sock):
+    ''' метод приема данных и формирование их в массив данных'''
     data = []
     chance = 0
     while True:
         raw = sock.recv(128)
         try:
             data.append(raw.decode('utf-8'))
-            # data = raw.decode('utf-8')
             if len(raw) == 0:
                 break
         except UnicodeDecodeError as e:
@@ -21,6 +20,9 @@ def socket_listen(sock):
 
 
 def task_setup(task):
+    ''' метод, который  создает генератор и готовит его
+    к отправвке первого запроса.'''
+    
     # 1 Определение ip-адреса
     addres, st = next(task)
     if st != Status.GOOD:
@@ -43,7 +45,7 @@ inputs = []
 outputs = []
 errors = []
 
-urls1 = ['https://api.github.com']
+urls1 = ['https://developer.mozilla.org']
 urls2 = [
     'http://www.google.com',
     'http://www.yandex.ru',
@@ -53,14 +55,14 @@ urls2 = [
     'http://tapochek.net'
 ]
 
-generators = map(gen2.generator, urls1)
-# generators = map(gen2.generator, urls2)
-# generators = [gen2.generator('https://api.github.com')]
+generators = map(gen2.generator, urls1)    # Вариант 1
+# generators = map(gen2.generator, urls2)   # Вариант 2
 tasks = {}
 
 for task in generators:
     task_setup(task)
 
+# Реализация селект-запроса
 while True:
     rsock, wsock, ersock = select.select(inputs, outputs, errors)
     
@@ -105,6 +107,3 @@ while True:
         print(' ---> task close')
         tasks[sock].close()
         sock.close()
-
-
-print('Exit app')
