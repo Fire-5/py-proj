@@ -20,14 +20,12 @@ def request(task_url):
 
     r = requests.Request('GET', task_url)
     req = r.prepare()
-    request = f"""GET {req.path_url} HTTP/1.1
-HOST: {task_url}
-User-Agent: python-requests/2.26.0
-Accept: */*
-Connection: keep-alive
-\r
-\r
-"""
+    request = f"""GET {req.path_url} HTTP/1.1\r\n
+HOST: {task_url}\r\n
+User-Agent: Mozilla/4.0 (compatible; MSIE5.01; Windows NT)\r\n
+Accept: */*\r\n
+Connection: Keep-Alive\r\n
+\r\n\r\n"""
     message = request.encode('utf-8')
     status = Status.GET
     print(message)
@@ -41,7 +39,7 @@ def setup_url(task_url, PORT):
     _socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         HOST = socket.gethostbyname(task_url)
-        # print(HOST, PORT)
+        print(HOST, PORT)
         _socket.connect((HOST, PORT))
         st = Status.START
 
@@ -52,11 +50,9 @@ def setup_url(task_url, PORT):
     finally:
         return _socket, st
 
-def prepare_download():
-    return download_link, status
 
 def generator(raw_url):
-    # 0
+    # Получение и обработка адреса для запроса 
 
     if 'https://' in raw_url:
         PORT = 433
@@ -67,31 +63,35 @@ def generator(raw_url):
 
     print(f' ---> {task_url} Step 0')
 
+    # 0 Возвращаем из генератора сокет
     socket, status = setup_url(task_url, PORT)
     yield socket, status
 
     print(f' ---> {task_url} Step 1')
     # 1
     message, status = request(raw_url)
-    yield message, status
+    yield message, status 
 
     print(f' ---> {task_url} Step 2')
     # 2
-    raw_data = yield()
+
+    raw_data = yield None, status # ????????????
+    print(f'[R] {type(raw_data)}\n {raw_data[:15]}')
 
     print(f' ---> {task_url} Step 3')
     # 3
     pack, status = read_data(raw_data)
 
-    print(f' ---> {task_url} Step 4')
-    for img_url in pack:
-        # 4
-        yield img_url, status
-        # 5
-        data_img = yield()
-        # ....
+    # print(f' ---> {task_url} Step 4')
+    # for img_url in pack:
+    #     # 4
+    #     yield img_url, status
+    #     # 5
+    #     data_img = yield()
+    #     # ....
 
-    print(f' ---> {task_url} Finish!')
+    # print(f' ---> {task_url} Finish!')
     # 7
     status = Status.CLOSE
+    yield None, status
     yield None, status
