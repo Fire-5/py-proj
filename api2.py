@@ -65,6 +65,25 @@ for task in generators:
 # Реализация селект-запроса
 while True:
     rsock, wsock, ersock = select.select(inputs, outputs, errors)
+
+    print(' -------------------- ',len(rsock), len(wsock), len(ersock))
+    for sock in wsock:
+    # отправка сообщений
+        # 3 получение запроса от генератора
+
+        msg, st = next(tasks[sock])
+        print(' ---> ', msg, '---' , st)
+        if st == Status.OPEN:
+            sock.send(msg)
+            inputs.append(sock)
+            outputs.remove(sock)
+        if st == Status.FETCH:
+            print(type(msg))
+            print(' ---> GOOD')
+        if st == Status.CLOSE:
+            errors.append(sock)
+            outputs.remove(sock)
+        
     
     for sock in rsock:
     # прием сообщенией.
@@ -84,22 +103,7 @@ while True:
         outputs.append(sock)
         inputs.remove(sock)
         
-    for sock in wsock:
-    # отправка сообщений
-        # 3 получение запроса от генератора
-        msg, st = next(tasks[sock])
-        # print(' ---> ', msg, st)
-        if st == Status.OPEN:
-            sock.send(msg)
-            inputs.append(sock)
-            outputs.remove(sock)
-        if st == Status.FETCH:
-            print(type(msg))
-            print(' ---> GOOD')
-        if st == Status.CLOSE:
-            errors.append(sock)
-            outputs.remove(sock)
-        
+    
     for sock in ersock:
     # удаление сокета.
         inputs.remove(sock)

@@ -2,6 +2,7 @@
 import enum
 import socket
 import requests
+import os
 
 
 
@@ -37,10 +38,10 @@ def request(task_url):
 
     r = requests.Request('GET', task_url)
     req = r.prepare()
-    request = """{} {} HTTP/1.1
+    request = f"""{req.method} {req.path_url} HTTP/1.1
 Host: developer.mozilla.org
 
-""".format(req.method, req.path_url, req.url)
+"""
     request = request.encode('utf-8')
     return request
 
@@ -52,7 +53,7 @@ def check(report):
         status = temp[0].split()
         return status[1]
     except:
-        return '400'
+        return 'Error'
     
 def parsing(report):
     ''' метод обработки входящего сообщения. 
@@ -77,13 +78,13 @@ def generator(raw_url):
     формирует запросы и парсит данные отправляя наружу 
     только нужный объект данных и статус'''
 
-    print("{:<25} {}".format(raw_url, 'Step 1\r'))
+    print("{:<25} {}".format(raw_url, 'Step 1'))
     # 1 Определение ip-адреса
     if 'https://' in raw_url:
-        PORT = '80'
+        PORT = '443'
         task_url = raw_url[8:]
     elif 'http://' in raw_url:
-        PORT = '80'
+        PORT = '443'
         task_url = raw_url[7:]
 
     try:
@@ -93,7 +94,7 @@ def generator(raw_url):
         HOST = '127.0.0.1'
         yield HOST + ':' + PORT, Status.CLOSE
     
-    print("{:<25} {}".format(raw_url, 'Step 2\r'))
+    print("{:<25} {}".format(raw_url, 'Step 2'))
     # 2 Подключение к сайту
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -105,12 +106,14 @@ def generator(raw_url):
     finally:
         yield sock, st
 
-    print("{:<25} {}".format(raw_url, 'Step 3\r'))
+    print("{:<25} {}".format(raw_url, 'Step 3'))
     # 3 создание запроса
+
     message = request(raw_url)
+    print(message[:30])
     yield message, Status.OPEN
 
-    print("{:<25} {}".format(raw_url, 'Step 4\r'))    
+    print("{:<25} {}".format(raw_url, 'Step 4'))    
     # 4 Прием извне данных
     report = yield()
     
@@ -120,7 +123,7 @@ def generator(raw_url):
     if st_report != '200':
         yield str_None, Status.CLOSE
 
-    print ("{:<25} {}".format(raw_url, 'Stepи 5 '), st_report)    
+    print ("{:<25} {}".format(raw_url, 'Step 5 '), type(report))    
     dt_report = parsing(report)
     if 'img' in dt_report:
         urls = []
@@ -140,3 +143,19 @@ def generator(raw_url):
 
     print ("{:<25} {}".format(raw_url, 'ERROR'))
     yield 'Finish', Status.CLOSE
+
+
+def gen_img(url):
+    '''Генератор для скачивания картинки'''
+
+    # 1 Создание сокета
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    yield socket
+    
+    # 2 создание запроса
+
+
+    # 3 получение картинки
+
+
+    # 4 Сохранение картинки
