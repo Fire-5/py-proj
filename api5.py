@@ -1,19 +1,22 @@
 import select
-import gen5
+import gen5_1
 
 
 def listen_data(sock):
-    """ метод приема данных и формирование их в массив данных"""
+    """Метод приема данных и формирование их в массив.
+    На вход получает активный сокет. На выход выдает строку
+    бинарных данных."""
+    
     data = ''
     while True:
         raw = sock.recv(128)
         try:
-            data += raw.decode('utf-8')
+            data += raw
             if len(raw) == 0:
                 break
 
         except UnicodeDecodeError as e:
-            print('[!] Unicode Error!\n{e}')
+            print(f'[!] Unicode Error!\n{e}')
             continue
     return data
 
@@ -23,9 +26,10 @@ def main():
     outputs = []
     errors = []
 
-    Status = gen5.Status
+    Status = gen5_1.Status
 
-    urls1 = ['http://www.google.com']
+    # http://www.google.com/textinputassistant/tia.png
+    urls1 = ['https://www.google.com']
     urls2 = [
         'http://www.google.com',
         'http://www.yandex.ru',
@@ -35,15 +39,16 @@ def main():
         'http://tapochek.net'
     ]
 
-    generators = map(gen5.generator, urls1)  # Вариант 1
-    # generators = map(gen5.generator, urls2)  # Вариант 2
+    generators = map(gen5_1.generator, urls1)  # Вариант 1
+    # generators = map(gen5_1.generator, urls2)  # Вариант 2
 
-    outputs, tasks = gen5.setup_generator(generators)
+    outputs, tasks = gen5_1.setup_generator(generators)
 
     while True:
-
-        read, write, err = select.select(inputs, outputs, errors, 3)
         print(f'[+] R:{len(read)} W:{len(write)} E:{len(err)}')
+        if len(outputs) == 0:
+            break
+        read, write, err = select.select(inputs, outputs, errors, 3)
 
         for sock in write:
             # 2
@@ -58,13 +63,6 @@ def main():
                 outputs.remove(sock)
                 break
 
-            if st == Status.CLOSE:
-                print(f'[CLOSE] Close socket in WRITE.')
-                assert st == Status.CLOSE
-                outputs.remove(sock)
-                tasks[sock].close()
-                break
-
             if st == Status.ERROR:
                 print(f'[ERROR] Close socket in WRITE.')
                 assert st == Status.CLOSE
@@ -72,16 +70,39 @@ def main():
                 errors.append(sock)
                 break
 
-            else:
-                print(f'[ERROR] Status: {st}\nTask error in step 2')
-                tasks[sock].close()
+            # 4
+            if st == Status.APPEND_1:
+                outputs.append(msg)
+                break
+
+            if st == Status.APPEND_2:
+                tasks.update(msg)
+                break
+
+            if st == Status.END:
+                inputs.append(sock)
                 outputs.remove(sock)
+                break
+
+            # 5
+            if st == Status.CLOSE:
+                print(f'[CLOSE] Close socket in WRITE.')
+                assert st == Status.CLOSE
+                outputs.remove(sock)
+                tasks[sock].close()
+                break
+
+            # else:
+            #     print(f'[ERROR] Status: {st}\nTask error in step 2')
+            #     tasks[sock].close()
+            #     outputs.remove(sock)
 
         for sock in read:
+        	# 3
             data = listen_data(sock)
             staff, st = tasks[sock].send(None)
             print(f'[TEST] in READ {st}')
-            print(f'[TEST] input data:\n{data[:16]}\n...')
+            print(f'[TEST] input data:\n{data}\n...')
 
             if st != Status.READY:
                 inputs.remove(sock)
