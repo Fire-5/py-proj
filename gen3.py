@@ -4,6 +4,7 @@ import socket
 import requests
 import os
 
+
 class Status(enum.Enum):
     START = enum.auto()
     GET = enum.auto()
@@ -21,19 +22,21 @@ def request(task_url):
     r = requests.Request('GET', task_url)
     req = r.prepare()
     request = f"""GET {req.path_url} HTTP/1.1\r\n
-HOST: {task_url}\r\n
-User-Agent: Mozilla/4.0 (compatible; MSIE5.01; Windows NT)\r\n
-Accept: */*\r\n
-Connection: Keep-Alive\r\n
-\r\n\r\n"""
+    HOST: {task_url}\r\n
+    User-Agent: Mozilla/4.0 (compatible; MSIE5.01; Windows NT)\r\n
+    Accept: */*\r\n
+    Connection: Keep-Alive\r\n
+    \r\n\r\n"""
     message = request.encode('utf-8')
     status = Status.GET
     print(message)
     return message, status
 
+
 def read_data(raw_data):
     print('[CHECK] ::', raw_data)
     return [], Status.ERROR
+
 
 def setup_url(task_url, PORT):
     _socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -70,17 +73,17 @@ def generator(raw_url):
     print(f' ---> {task_url} Step 1')
     # 1
     message, status = request(raw_url)
-    yield message, status 
+    yield message, status
 
     print(f' ---> {task_url} Step 2')
-    # 2
 
-    raw_data = yield None, status # ????????????
-    print(f'[R] {type(raw_data)}\n {raw_data[:15]}')
+    # 2
+    raw_data = yield  # ????????????
+    print(f'[R] {type(raw_data)}')
 
     print(f' ---> {task_url} Step 3')
     # 3
-    pack, status = read_data(raw_data)
+    pack, Status.LOAD = read_data(raw_data)
 
     # print(f' ---> {task_url} Step 4')
     # for img_url in pack:
