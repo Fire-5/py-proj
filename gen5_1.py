@@ -21,7 +21,7 @@ class Status(enum.Enum):
 def setup_generator(generators_list):
     """Функция, которая подготавливает (делает первый шаг)
     в списке генераторов. На вход требует список генераторов.
-    На выход выдает пару: список сокетов и словарь генератор : сокет"""
+    На выход выдает пару: список сокетов и словарь (генератор : сокет)"""
 
     tasks = {}
     outputs = []
@@ -44,7 +44,7 @@ def parser(url, raw_data):
     и выбирает в нем все ссылки на картинки. 
     Функция возвращает массив ссылок[0] и их ID[1]"""
 
-    raw_data = raw_data.decode('utf-8') #########
+    raw_data = raw_data.decode('utf-8')
     data = raw_data.split('\r\n\r\n')[1]
     img_list = []
     soup = bs(data, 'html.parser')
@@ -80,7 +80,7 @@ User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 def setup_url(raw_url):
     """Функция, которая по ссылке создает подключение 
-    к ресурсу и возвращает готовую пару сокет-статус"""
+    к ресурсу и возвращает готовую пару сокет-статус."""
 
     if 'https://' in raw_url:
         PORT = 433
@@ -119,11 +119,9 @@ def generator_img(img_url):
     # 1 Подготовка соединения
     sock, st = setup_url(raw_url)
     yield sock, st
-    # print(f'[+] Step 1: Connect done!')
 
     # 2 Формирование запроса
     msg = request(raw_url)
-    # print(f'[+] MESSAGE: {msg[:20]}')
     yield msg, Status.GET
 
     # 3 Получение ответа
@@ -142,6 +140,7 @@ def generator_img(img_url):
         f = open(f'data//{directory}//{img_name}.{format}', 'wb')
         f.write(image[1])
         f.close()
+        print(f'[+] File save: data//{directory}//{img_name}.{format}')
 
         # 5 Закрытие
         print(f'[+] Task {raw_url} finished!')

@@ -27,23 +27,23 @@ def listen_data(sock):
 
 
 def main():
+ """ Основная функция приложения. 
+ Инициализирует все необходимые данные и запускает 
+ главный цикл
+ """
+
     inputs = []
     outputs = []
     errors = []
 
     Status = gen5_1.Status
 
-    # http://www.google.com/textinputassistant/tia.png
     urls1 = ['http://www.google.com']
     urls2 = [
         'http://www.google.com',
-        'http://www.yandex.ru',
-        'http://www.python.org',
         'http://www.py4inf.com',
-        'https://vk.com',
-        'https://www.rupython.com',
-        'https://pythonworld.ru',
-        'https://mail.ru/',
+        'http://m.vk.com',
+        'http://www.pythonworld.ru',
     ]
 
     # generators = map(gen5_1.generator, urls1)  # Вариант 1
@@ -63,7 +63,6 @@ def main():
             # 2
             msg, st = tasks[sock].send(None)
             print(f'[T] in WRITE {st}')
-            # print(f'[TEST] Message:\n{msg}')
 
             if st == Status.GET:
                 assert st == Status.GET
@@ -74,7 +73,7 @@ def main():
 
             if st == Status.ERROR:
                 print(f'[E] Close socket in WRITE.')
-                assert st == Status.CLOSE
+                assert st == Status.ERROR
                 outputs.remove(sock)
                 errors.append(sock)
                 break
@@ -86,10 +85,7 @@ def main():
                 tasks.update(msg[1])
                 outputs.remove(sock)
                 tasks[sock].close()
-
-
                 break
-
 
             if st == Status.WAIT:
                 break
@@ -101,18 +97,13 @@ def main():
                 tasks[sock].close()
                 break
 
-            # else:
-            #     print(f'[ERROR] Status: {st}\nTask error in step 2')
-            #     tasks[sock].close()
-            #     outputs.remove(sock)
-
         for sock in read:
         	# 3
             time.sleep(0.03)
             data = listen_data(sock)
             staff, st = tasks[sock].send(None)
             print(f'[T] in READ {st}')
-            # print(f'[TEST] input data:\n{data[:30]}\n...')
+            print(f'[TEST] input data:\n{data[:30]}\n...')
 
             if st != Status.READY:
                 inputs.remove(sock)
