@@ -27,11 +27,6 @@ def listen_data(sock):
 
 
 def main():
- """ Основная функция приложения. 
- Инициализирует все необходимые данные и запускает 
- главный цикл
- """
-
     inputs = []
     outputs = []
     errors = []
@@ -40,6 +35,7 @@ def main():
 
     urls1 = ['http://www.google.com']
     urls2 = [
+        'http://www.youtube.com',
         'http://www.google.com',
         'http://www.py4inf.com',
         'http://m.vk.com',
@@ -103,7 +99,8 @@ def main():
             data = listen_data(sock)
             staff, st = tasks[sock].send(None)
             print(f'[T] in READ {st}')
-            print(f'[TEST] input data:\n{data[:30]}\n...')
+            input_headers = data.split(b'\r\n\r\n')[0].decode('utf-8') 
+            print(f'[TEST] input data:\n{input_headers}\n...')
 
             if st != Status.READY:
                 inputs.remove(sock)
