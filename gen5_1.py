@@ -1,6 +1,7 @@
 import socket
 import enum
 import os
+import time
 
 import requests as requests
 from bs4 import BeautifulSoup as bs
@@ -13,7 +14,7 @@ class Status(enum.Enum):
     CLOSE = enum.auto()
     READY = enum.auto()
     LOAD = enum.auto()
-    END = enum.auto()
+    WAIT = enum.auto()
     APPEND = enum.auto()
 
 
@@ -49,28 +50,11 @@ def parser(url, raw_data):
     soup = bs(data, 'html.parser')
 
     for tag in soup.find_all("img"):
-        print(f" ---> {url + tag.get('src')}\n ---> {tag.get('id')}")
+        # print(f" ---> {url + tag.get('src')}\n ---> {tag.get('id')}")
         src = url + tag.get('src')
         img_list.append([src, tag.get('id')])
 
     return img_list
-
-
-def request_img(t_url):
-    """Функция, которая собирает HTTP-запрос GET
-    Для скачивания картинки. В целом работает..."""
-
-    r = requests.Request('GET', t_url)
-    req = r.prepare()
-    url = t_url.replace(req.path_url, '')
-    url = url.replace('https://', '')
-    url = url.replace('http://', '')
-
-    request = b"GET {req.path} HTTP/1.1\r\nHOST: {url}\r\n\r\n"
-    print(f'[CHECK] REQUEST:\n{request}')
-    message = request.encode('utf-8')
-
-    return message    
 
 
 def request(task_url):
@@ -86,8 +70,6 @@ def request(task_url):
 
     request = f"""GET {req.path_url} HTTP/1.1\r\n
 HOST: {url}\r\n
-Accept: text/html\r\n
-Accept-Encoding: gzip, deflate\r\n
 Connection: keep-alive\r\n
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36\r\n
 \r\n\r\n"""
@@ -131,16 +113,17 @@ def generator_img(img_url):
     # 0 Запуск
     raw_url = img_url[0]
     img_name = img_url[1]
-    print(f'[+] Task IMAGE URL: {raw_url}')
-
+    format = raw_url.split('.')[-1]
+    directory = raw_url.split('.')[1]
+    
     # 1 Подготовка соединения
     sock, st = setup_url(raw_url)
     yield sock, st
-    print(f'[+] Step 1: Connect done!')
+    # print(f'[+] Step 1: Connect done!')
 
     # 2 Формирование запроса
-    msg = request_img(raw_url)
-    # print(f'[+] Step 2: Message send!')
+    msg = request(raw_url)
+    # print(f'[+] MESSAGE: {msg[:20]}')
     yield msg, Status.GET
 
     # 3 Получение ответа
@@ -150,14 +133,14 @@ def generator_img(img_url):
         yield None, Status.ERROR
 
     else:
-        print(f'[+] Download data:\n{image[:16]}')
-
         # 4 Сохранениие изображения
-        if not os.path.exists(f'data//{raw_url[8:]}'):
-            os.mkdir(f'data//{raw_url[8:]}')
+        image = image.split(b'\r\n\r\n')
 
-        f = open(f'data//{raw_url[8:]}//{img_name}.png', 'wb')
-        f.write(image)
+        if not os.path.exists(f'data//{directory}'):
+            os.mkdir(f'data//{directory}')
+
+        f = open(f'data//{directory}//{img_name}.{format}', 'wb')
+        f.write(image[1])
         f.close()
 
         # 5 Закрытие
@@ -170,9 +153,6 @@ def generator(raw_url):
     """Генератор, который парсит страницу 
     и находит все ссылки на картинки.
     На вход подается прямая ссылка на ресурс"""
-
-    # 0 Запуск
-    print(f'[+] Task URL: {raw_url}')
 
     # 1 Подготовка соединеия
     sock, st = setup_url(raw_url)
@@ -190,15 +170,19 @@ def generator(raw_url):
     img_list = parser(raw_url, raw_data)
 
     # 4 Формирование новых списков задач и списка сокетов.
+    outputs = []
+    tasks = []
+
     if len(img_list) > 0:
         generators = map(generator_img, img_list)
         outputs, tasks = setup_generator(generators)
-        
-        yield [outputs, tasks], Status.APPEND
 
-        # print(f'[+] Task URL: {raw_url} Step 4')
-        yield None, Status.END
+    # time.sleep(6)
+    yield None, Status.WAIT
+    yield [outputs, tasks], Status.APPEND
 
+    # print(f'[+] Task URL: {raw_url} Step 4')
+    # yield None, Status.END
 
     # 5 Закрытие
     print(f'[+] Task URL: {raw_url} finished!')
